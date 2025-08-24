@@ -3,12 +3,12 @@ import api from "../api";
 
 export default function HotelList() {
   const [hotels, setHotels] = useState([]);
-  const [filteredHotels, setFilteredHotels] = useState([]);
+  const [allHotels, setAllHotels] = useState([]); // keep original list
 
   const fetchHotels = async () => {
     const res = await api.get("/hotels");
     setHotels(res.data);
-    setFilteredHotels(res.data); // keep original & filtered copy
+    setAllHotels(res.data);
   };
 
   const handleDelete = async (id) => {
@@ -19,33 +19,27 @@ export default function HotelList() {
   const handleUpdate = async (id) => {
     const newName = prompt("Enter new name:");
     if (newName) {
-      await api.put(`/hotels/${id}`, { ...hotels.find(h => h.hotelId === id), name: newName });
+      await api.put(`/hotels/${id}`, {
+        ...hotels.find((h) => h.hotelId === id),
+        name: newName,
+      });
       fetchHotels();
     }
   };
 
-  // Sorting A-Z
-  const sortAZ = () => {
-    const sorted = [...filteredHotels].sort((a, b) => a.name.localeCompare(b.name));
-    setFilteredHotels(sorted);
-  };
-
-  // Sorting Z-A
-  const sortZA = () => {
-    const sorted = [...filteredHotels].sort((a, b) => b.name.localeCompare(a.name));
-    setFilteredHotels(sorted);
-  };
-
-  // Filter by today's upload
-  const filterToday = () => {
-    const today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
-    const filtered = hotels.filter(h => h.createdAt?.startsWith(today));
-    setFilteredHotels(filtered);
-  };
-
-  // Reset filters
-  const resetFilters = () => {
-    setFilteredHotels(hotels);
+  // 🔹 filter buttons
+  const handleFilter = (type) => {
+    if (type === "az") {
+      setHotels([...allHotels].sort((a, b) => a.name.localeCompare(b.name)));
+    } else if (type === "today") {
+      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+      const filtered = allHotels.filter(
+        (h) => h.createdAt?.split("T")[0] === today
+      );
+      setHotels(filtered);
+    } else {
+      setHotels(allHotels); // reset
+    }
   };
 
   useEffect(() => {
@@ -56,21 +50,55 @@ export default function HotelList() {
     <div>
       <h2 className="text-xl font-bold mb-2">Hotel List</h2>
 
-      {/* Filter buttons */}
-      <div className="mb-4 space-x-2">
-        <button onClick={sortAZ} className="bg-blue-500 text-white px-3 py-1 rounded">A → Z</button>
-        <button onClick={sortZA} className="bg-blue-500 text-white px-3 py-1 rounded">Z → A</button>
-        <button onClick={filterToday} className="bg-green-500 text-white px-3 py-1 rounded">Today Upload</button>
-        <button onClick={resetFilters} className="bg-gray-500 text-white px-3 py-1 rounded">Reset</button>
+      {/* 🔹 Filter Buttons */}
+      <div className="space-x-2 mb-4">
+        <button
+          onClick={() => handleFilter("az")}
+          className="bg-blue-500 text-white px-3 py-1 rounded"
+        >
+          Sort A–Z
+        </button>
+        <button
+          onClick={() => handleFilter("today")}
+          className="bg-green-500 text-white px-3 py-1 rounded"
+        >
+          Today Uploads
+        </button>
+        <button
+          onClick={() => handleFilter("reset")}
+          className="bg-gray-500 text-white px-3 py-1 rounded"
+        >
+          Reset
+        </button>
       </div>
 
+      {/* 🔹 Hotel List */}
       <ul className="space-y-2">
-        {filteredHotels.map((h) => (
-          <li key={h.hotelId} className="flex justify-between items-center border p-2 rounded">
-            <span>{h.name} ({h.location}) ⭐ {h.rating} — Team: {h.teamInCharge}</span>
+        {hotels.map((h) => (
+          <li
+            key={h.hotelId}
+            className="flex justify-between items-center border p-2 rounded"
+          >
+            <span>
+              {h.name} ({h.location}) ⭐ {h.rating} — Team: {h.teamInCharge}
+              <br />
+              <small className="text-gray-500">
+                Uploaded: {h.createdAt}
+              </small>
+            </span>
             <div>
-              <button onClick={() => handleUpdate(h.hotelId)} className="bg-yellow-400 text-black px-2 py-1 rounded mr-2">Edit</button>
-              <button onClick={() => handleDelete(h.hotelId)} className="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
+              <button
+                onClick={() => handleUpdate(h.hotelId)}
+                className="bg-yellow-400 text-black px-2 py-1 rounded mr-2"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => handleDelete(h.hotelId)}
+                className="bg-red-500 text-white px-2 py-1 rounded"
+              >
+                Delete
+              </button>
             </div>
           </li>
         ))}
