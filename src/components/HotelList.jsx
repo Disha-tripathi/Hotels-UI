@@ -7,6 +7,7 @@ export default function HotelList() {
 
   const fetchHotels = async () => {
     const res = await api.get("/hotels");
+    console.log("Hotels from API:", res.data); // 👀 check backend data
     setHotels(res.data);
     setAllHotels(res.data);
   };
@@ -33,9 +34,15 @@ export default function HotelList() {
       setHotels([...allHotels].sort((a, b) => a.name.localeCompare(b.name)));
     } else if (type === "today") {
       const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-      const filtered = allHotels.filter(
-        (h) => h.createdAt?.split("T")[0] === today
-      );
+      const filtered = allHotels.filter((h) => {
+        if (!h.createdAt) return false;
+
+        // Normalize both "YYYY-MM-DDTHH:mm:ss" and "YYYY-MM-DD HH:mm:ss"
+        const dateOnly =
+          h.createdAt.split("T")[0] || h.createdAt.split(" ")[0];
+
+        return dateOnly === today;
+      });
       setHotels(filtered);
     } else {
       setHotels(allHotels); // reset
@@ -83,7 +90,7 @@ export default function HotelList() {
               {h.name} ({h.location}) ⭐ {h.rating} — Team: {h.teamInCharge}
               <br />
               <small className="text-gray-500">
-                Uploaded: {h.createdAt}
+                Uploaded: {h.createdAt || "N/A"}
               </small>
             </span>
             <div>
